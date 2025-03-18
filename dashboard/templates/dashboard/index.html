@@ -1,0 +1,98 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SeaQR Sensor Dashboard</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
+    <style>
+        body { background-color: #f8f9fa; }
+        #map { height: 400px; }
+        .card { box-shadow: 2px 2px 10px rgba(0, 0, 0, 0.1); }
+    </style>
+</head>
+<body>
+    <div class="container-fluid">
+        <h1 class="text-center mt-3">SeaQR Sensor Dashboard</h1>
+
+        <div class="row">
+            <!-- Weather Data -->
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h3>🌤️ Weather</h3>
+                    <p id="weather">Loading...</p>
+                </div>
+            </div>
+            
+            <!-- Video Feeds -->
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h3>📹 Camera 1</h3>
+                    <img src="{% url 'video_feed' %}" class="img-fluid" alt="Camera 1 Feed">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card p-3">
+                    <h3>📹 Camera 2</h3>
+                    <img src="{% url 'video_feed' %}" class="img-fluid" alt="Camera 2 Feed">
+                </div>
+            </div>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-12">
+                <div class="card p-3">
+                    <h3>✈️ Live Flight Tracker</h3>
+                    <div id="map"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- JS Dependencies -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <script>
+        // Fetch Weather Data
+        fetch("{% url 'weather_data' %}")
+            .then(response => response.json())
+            .then(data => {
+                if (data.error) {
+                    document.getElementById("weather").innerHTML = "⚠️ Weather data unavailable";
+                } else {
+                    document.getElementById("weather").innerHTML = `
+                        🌡️ Temperature: ${data.temperature} <br>
+                        🌬️ Feels Like: ${data.feels_like} <br>
+                        💧 Humidity: ${data.humidity} <br>
+                        🌪️ Wind Speed: ${data.wind_speed} <br>
+                        ⛅ Condition: ${data.weather}
+                    `;
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching weather data:", error);
+                document.getElementById("weather").innerHTML = "⚠️ Error loading weather data";
+            });
+
+        // Initialize Leaflet Map
+        var map = L.map('map').setView([1.3521, 103.8198], 10);  // Center on Singapore
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+        // Fetch Live Flight Data
+        fetch("{% url 'flight_data' %}")
+            .then(response => response.json())
+            .then(data => {
+                data.forEach(flight => {
+                    L.marker([flight.lat, flight.lon])
+                        .addTo(map)
+                        .bindPopup(`<b>Flight:</b> ${flight.callsign}<br><b>Altitude:</b> ${flight.alt}m`);
+                });
+            })
+            .catch(error => {
+                console.error("Error fetching flight data:", error);
+            });
+    </script>
+</body>
+</html>
